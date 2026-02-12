@@ -1,0 +1,11 @@
+<%= form_with model: @server, url: servers_path do |f| %>
+  <div class="field">
+    <%= f.label :hostname, "Hostname (optional)" %>
+    <%= f.text_field :hostname, placeholder: "e.g. db-server-01" %>
+  </div>
+  <div class="field">
+    <%= f.label :ip, "IP (optional)" %>
+    <%= f.text_field :ip, placeholder: "e.g. 192.168.1.10" %>
+  </div>
+  <%= f.submit "Add server" %>
+<% end %>

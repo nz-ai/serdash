@@ -1,0 +1,30 @@
+<div class="servers">
+  <h1>Servers</h1>
+  <%= link_to "Add server", new_server_path, class: "btn btn-primary" %>
+  <%= link_to "Discover", discover_path, class: "btn btn-secondary" %>
+
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Hostname</th>
+        <th>Status</th>
+        <th>Last seen</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @servers.each do |server| %>
+        <tr>
+          <td><%= link_to server.hostname || "server-#{server.id}", server_path(server) %></td>
+          <td><span class="badge badge-<%= server.status %>"><%= server.status %></span></td>
+          <td><%= server.last_seen_at&.strftime("%Y-%m-%d %H:%M") || "—" %></td>
+          <td><%= button_to "Remove", server_path(server), method: :delete, data: { turbo_confirm: "Remove this server?" }, class: "btn btn-sm btn-danger" %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+
+  <% if @servers.empty? %>
+    <p>No servers yet. Add one to get started.</p>
+  <% end %>
+</div>

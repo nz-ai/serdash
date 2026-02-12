@@ -1,0 +1,24 @@
+<div class="home">
+  <h1>Serdash</h1>
+  <p class="tagline">LAN Server Monitoring Dashboard</p>
+
+  <% if signed_in? %>
+    <p>Welcome, <%= current_user.email %>.</p>
+    <%= link_to "Servers", servers_path, class: "btn btn-primary" %>
+    <%= link_to "Discover", discover_path, class: "btn btn-secondary" %>
+    <%= button_to "Sign out", signout_path, method: :delete, class: "btn btn-secondary" %>
+  <% else %>
+    <p>Sign in to view your servers.</p>
+    <div class="auth-buttons">
+      <% if ENV["GOOGLE_CLIENT_ID"].present? %>
+        <%= button_to "Sign in with Google", "/auth/google_oauth2", method: :post, data: { turbo: false }, class: "btn btn-primary" %>
+      <% end %>
+      <% if ENV["GITHUB_CLIENT_ID"].present? %>
+        <%= button_to "Sign in with GitHub", "/auth/github", method: :post, data: { turbo: false }, class: "btn btn-secondary" %>
+      <% end %>
+      <% unless ENV["GOOGLE_CLIENT_ID"].present? || ENV["GITHUB_CLIENT_ID"].present? %>
+        <p class="text-muted">Configure GOOGLE_CLIENT_ID or GITHUB_CLIENT_ID for OAuth login.</p>
+      <% end %>
+    </div>
+  <% end %>
+</div>

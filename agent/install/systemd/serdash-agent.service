@@ -1,0 +1,15 @@
+[Unit]
+Description=Serdash metrics agent
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=serdash-agent
+Group=serdash-agent
+ExecStart=/usr/local/bin/serdash-agent run --config-dir /etc/serdash-agent
+Restart=on-failure
+RestartSec=60
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,247 @@
+<% content_for :head do %>
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<% end %>
+
+<div class="server-detail">
+  <h1><%= @server.hostname || "Server ##{@server.id}" %></h1>
+  <p>Status: <span class="badge badge-<%= @server.status %>"><%= @server.status %></span></p>
+  <p>Last seen: <%= @server.last_seen_at&.strftime("%Y-%m-%d %H:%M") || "—" %></p>
+
+  <% if @server.status == "pending_registration" %>
+    <% code = @server.registration_codes.valid.first %>
+    <% if code %>
+      <div class="alert alert-info">
+        <strong>Registration code:</strong> <%= code.code %> (expires <%= code.expires_at.strftime("%H:%M") %>)
+        <br>
+        Run on the server: <code>serdash-agent register https://your-collector-host <%= code.code %></code>
+      </div>
+    <% else %>
+      <p>No valid registration code. Add a new server to get a fresh code.</p>
+    <% end %>
+  <% end %>
+
+  <div class="server-tabs">
+    <%= link_to "Metrics", server_path(@server, tab: "metrics", range: params[:range].presence || "7d"), class: "tab-btn #{@tab == 'metrics' ? 'active' : ''}" %>
+    <%= link_to "Listening ports", server_path(@server, tab: "ports", ports_date: @ports_date), class: "tab-btn #{@tab == 'ports' ? 'active' : ''}" %>
+    <%= link_to "Connections", server_path(@server, tab: "connections", connections_date: @connections_date), class: "tab-btn #{@tab == 'connections' ? 'active' : ''}" %>
+  </div>
+
+  <div class="tab-panel tab-metrics <%= 'active' if @tab == 'metrics' %>">
+  <h2>Metrics</h2>
+
+  <% if @server.cpu_samples.any? || @server.disk_samples.any? || @server.memory_samples.any? %>
+    <% current_range = params[:range].presence || "7d" %>
+    <div class="metrics-range">
+      <span class="range-label">Time range:</span>
+      <%= link_to "1 day", server_path(@server, range: "1d"), class: "btn btn-sm btn-secondary range-btn #{current_range == '1d' ? 'active' : ''}" %>
+      <%= link_to "7 days", server_path(@server, range: "7d"), class: "btn btn-sm btn-secondary range-btn #{current_range == '7d' ? 'active' : ''}" %>
+      <%= link_to "30 days", server_path(@server, range: "30d"), class: "btn btn-sm btn-secondary range-btn #{current_range == '30d' ? 'active' : ''}" %>
+    </div>
+
+    <div class="charts-grid">
+      <% if @server.disk_samples.any? %>
+        <div class="chart-card">
+          <h3>Disk usage</h3>
+          <div id="chart-disk"></div>
+        </div>
+      <% end %>
+      <% if @server.memory_samples.any? %>
+        <div class="chart-card">
+          <h3>Memory</h3>
+          <div id="chart-memory"></div>
+        </div>
+      <% end %>
+      <% if @server.cpu_samples.any? %>
+        <div class="chart-card">
+          <h3>CPU usage</h3>
+          <div id="chart-cpu"></div>
+        </div>
+        <div class="chart-card">
+          <h3>CPU temperature</h3>
+          <div id="chart-temp"></div>
+        </div>
+      <% end %>
+    </div>
+
+    <div class="latest-metrics">
+      <% if @server.cpu_samples.any? %>
+        <p><strong>Latest CPU:</strong> <%= @server.cpu_samples.last&.usage_percent %>% usage, <%= @server.cpu_samples.last&.temperature_celsius %>°C</p>
+      <% end %>
+      <% if @server.disk_samples.any? %>
+        <p><strong>Latest disk:</strong>
+          <% latest_at = @server.disk_samples.maximum(:sampled_at); @server.disk_samples.where(sampled_at: latest_at).each do |s| %>
+            <%= s.mount_point %>: <%= number_to_human_size(s.free_bytes) %> free / <%= number_to_human_size(s.total_bytes) %> total
+            <%= "; " unless s == @server.disk_samples.where(sampled_at: latest_at).last %>
+          <% end %>
+        </p>
+      <% end %>
+      <% if @server.memory_samples.any? %>
+        <% m = @server.memory_samples.last %>
+        <p><strong>Latest memory:</strong> <%= number_to_human_size(m.used_bytes) %> used / <%= number_to_human_size(m.total_bytes) %> total</p>
+      <% end %>
+    </div>
+  <% end %>
+
+  <% unless @server.cpu_samples.any? || @server.disk_samples.any? || @server.memory_samples.any? %>
+    <p>Charts and history will appear here once the agent is sending data.</p>
+  <% end %>
+  </div>
+
+  <div class="tab-panel tab-ports <%= 'active' if @tab == 'ports' %>">
+    <h2>Listening ports</h2>
+    <div class="gallery-date">
+      <span class="range-label">Date:</span>
+      <%= form_with url: server_path(@server), method: :get, local: true, class: "date-form" do |f| %>
+        <%= f.hidden_field :tab, value: "ports" %>
+        <%= f.date_field :ports_date, value: @ports_date, class: "date-input" %>
+        <%= f.submit "Go", class: "btn btn-sm btn-primary" %>
+      <% end %>
+    </div>
+    <% if @ports.any? %>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Port</th>
+            <th>Protocol</th>
+            <th>Process</th>
+            <th>Sampled at</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @ports.each do |s| %>
+            <tr>
+              <td><code><%= s.port %></code></td>
+              <td><%= s.protocol %></td>
+              <td><%= s.process || "—" %></td>
+              <td><%= s.sampled_at.strftime("%Y-%m-%d %H:%M") %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    <% else %>
+      <p class="text-muted">No listening ports recorded for <%= @ports_date.strftime("%Y-%m-%d") %>.</p>
+    <% end %>
+  </div>
+
+  <div class="tab-panel tab-connections <%= 'active' if @tab == 'connections' %>">
+    <h2>Connections</h2>
+    <div class="gallery-date">
+      <span class="range-label">Date:</span>
+      <%= form_with url: server_path(@server), method: :get, local: true, class: "date-form" do |f| %>
+        <%= f.hidden_field :tab, value: "connections" %>
+        <%= f.date_field :connections_date, value: @connections_date, class: "date-input" %>
+        <%= f.submit "Go", class: "btn btn-sm btn-primary" %>
+      <% end %>
+      <span class="range-label">Filter:</span>
+      <input type="text" id="connections-filter" class="filter-input" placeholder="Search local, remote, state..." autocomplete="off">
+    </div>
+    <% if @connections.any? %>
+      <table class="table" id="connections-table">
+        <thead>
+          <tr>
+            <th>Local</th>
+            <th>Remote</th>
+            <th>State</th>
+            <th>Sampled at</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @connections.each do |s| %>
+            <tr data-search="<%= [s.local_addr, s.remote_addr, s.state].compact.join(' ').downcase %>">
+              <td><code><%= s.local_addr %></code></td>
+              <td><code><%= s.remote_addr %></code></td>
+              <td><span class="badge badge-active"><%= s.state %></span></td>
+              <td><%= s.sampled_at.strftime("%Y-%m-%d %H:%M") %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    <% else %>
+      <p class="text-muted">No connections recorded for <%= @connections_date.strftime("%Y-%m-%d") %>.</p>
+    <% end %>
+  </div>
+
+  <script>
+    (function() {
+      const filter = document.getElementById("connections-filter");
+      const table = document.getElementById("connections-table");
+      if (!filter || !table) return;
+      const tbody = table.querySelector("tbody");
+      if (!tbody) return;
+
+      filter.addEventListener("input", function() {
+        const q = this.value.trim().toLowerCase();
+        tbody.querySelectorAll("tr").forEach(function(row) {
+          const text = (row.getAttribute("data-search") || "").toLowerCase();
+          row.style.display = (!q || text.includes(q)) ? "" : "none";
+        });
+      });
+    })();
+  </script>
+
+  <%= link_to "Back to servers", servers_path %>
+</div>
+
+<% if @server.cpu_samples.any? || @server.disk_samples.any? || @server.memory_samples.any? %>
+<script>
+(function() {
+  const url = "<%= metrics_server_path(@server, format: :json, range: params[:range].presence || '7d') %>";
+
+  const chartOpts = {
+    chart: { type: "area", height: 220, background: "transparent", toolbar: { show: false } },
+    theme: { mode: "dark" },
+    colors: ["#58a6ff", "#3fb950", "#d29922"],
+    stroke: { curve: "smooth", width: 2 },
+    fill: { type: "gradient", opacity: 0.2 },
+    xaxis: { type: "datetime", labels: { style: { colors: "#8b949e" } } },
+    yaxis: { labels: { style: { colors: "#8b949e" } } },
+    grid: { borderColor: "#30363d", xaxis: { lines: { show: false } } },
+    tooltip: { theme: "dark" },
+    legend: { labels: { colors: "#8b949e" } },
+    dataLabels: { enabled: false }
+  };
+
+  fetch(url)
+    .then(r => r.json())
+    .then(data => {
+      const el = id => document.querySelector(id);
+      if (data.disk && Object.keys(data.disk).length && el("#chart-disk")) {
+        const series = Object.entries(data.disk).map(([name, pts]) => ({
+          name: name || "/",
+          data: pts.map(p => [p.t, p.used_pct])
+        }));
+        new ApexCharts(el("#chart-disk"), {
+          ...chartOpts,
+          series,
+          yaxis: { ...chartOpts.yaxis, min: 0, max: 100, labels: { formatter: v => v + "%" } }
+        }).render();
+      }
+
+      if (data.memory && data.memory.length && el("#chart-memory")) {
+        new ApexCharts(el("#chart-memory"), {
+          ...chartOpts,
+          series: [{ name: "Used %", data: data.memory.map(p => [p.t, p.used_pct]) }],
+          yaxis: { ...chartOpts.yaxis, min: 0, max: 100, labels: { formatter: v => v + "%" } }
+        }).render();
+      }
+
+      if (data.cpu && data.cpu.length && el("#chart-cpu")) {
+        new ApexCharts(el("#chart-cpu"), {
+          ...chartOpts,
+          series: [{ name: "Usage %", data: data.cpu.map(p => [p.t, p.usage]) }],
+          yaxis: { ...chartOpts.yaxis, min: 0, max: 100, labels: { formatter: v => v + "%" } }
+        }).render();
+      }
+
+      if (data.cpu && data.cpu.length && el("#chart-temp")) {
+        new ApexCharts(el("#chart-temp"), {
+          ...chartOpts,
+          series: [{ name: "°C", data: data.cpu.map(p => [p.t, p.temp]) }],
+          yaxis: { ...chartOpts.yaxis, labels: { formatter: v => v + "°" } }
+        }).render();
+      }
+    })
+    .catch(e => console.error("Failed to load metrics:", e));
+})();
+</script>
+<% end %>

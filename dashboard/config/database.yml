@@ -1,0 +1,25 @@
+default: &default
+  adapter: postgresql
+  encoding: unicode
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+  # DATABASE_URL from docker-compose takes precedence when set
+
+development:
+  <<: *default
+  database: serdash_development
+  host: localhost
+  port: 15432
+  username: serdash
+  password: serdash_secret
+
+test:
+  <<: *default
+  database: serdash_test
+  host: localhost
+  port: 15432
+  username: serdash
+  password: serdash_secret
+
+production:
+  <<: *default
+  # Use DATABASE_URL from environment (docker-compose)

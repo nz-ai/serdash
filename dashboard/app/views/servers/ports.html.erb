@@ -1,0 +1,37 @@
+<div class="server-detail">
+  <h1><%= @server.hostname || "Server ##{@server.id}" %> — Listening ports</h1>
+  <p><%= link_to "← Back to server", server_path(@server) %></p>
+
+  <div class="gallery-date">
+    <span class="range-label">Date:</span>
+    <%= form_with url: ports_server_path(@server), method: :get, local: true, class: "date-form" do |f| %>
+      <%= f.date_field :date, value: @date, class: "date-input" %>
+      <%= f.submit "Go", class: "btn btn-sm btn-primary" %>
+    <% end %>
+  </div>
+
+  <% if @ports.any? %>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Port</th>
+          <th>Protocol</th>
+          <th>Process</th>
+          <th>Sampled at</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @ports.each do |s| %>
+          <tr>
+            <td><code><%= s.port %></code></td>
+            <td><%= s.protocol %></td>
+            <td><%= s.process || "—" %></td>
+            <td><%= s.sampled_at.strftime("%Y-%m-%d %H:%M") %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% else %>
+    <p class="text-muted">No listening ports recorded for <%= @date.strftime("%Y-%m-%d") %>.</p>
+  <% end %>
+</div>

@@ -1,0 +1,48 @@
+<div class="discovery">
+  <h1>Network Discovery</h1>
+  <p class="text-muted">Scan a subnet for visible hosts. For LAN discovery, ensure the collector can reach the subnet (e.g. run with host network).</p>
+
+  <%= form_with url: discover_path, method: :get, local: true do |f| %>
+    <div class="field">
+      <%= f.label :subnet, "Subnet (CIDR)" %>
+      <%= f.text_field :subnet, value: @subnet, placeholder: "192.168.1.0/24" %>
+    </div>
+    <%= f.submit "Discover", class: "btn btn-primary" %>
+  <% end %>
+
+  <% if @result %>
+    <% if @result["error"] %>
+      <div class="alert alert-info" style="border-color: var(--danger);">
+        Error: <%= @result["error"] %>
+      </div>
+    <% elsif @result["hosts"] %>
+      <h2>Found <%= @result["hosts"].size %> hosts</h2>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>IP</th>
+            <th>Hostname</th>
+            <th>MAC</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @result["hosts"].each do |h| %>
+            <tr>
+              <td><%= h["ip"] %></td>
+              <td><%= h["hostname"] || "—" %></td>
+              <td><%= h["mac"] || "—" %></td>
+              <td>
+                <% unless Server.exists?(ip: h["ip"]) %>
+                  <%= link_to "Add as server", new_server_path(hostname: h["hostname"], ip: h["ip"]), class: "btn btn-sm btn-secondary" %>
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    <% end %>
+  <% end %>
+
+  <%= link_to "Back to servers", servers_path %>
+</div>

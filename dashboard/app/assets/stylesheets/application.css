@@ -1,0 +1,157 @@
+/*
+ * Serdash Dashboard
+ */
+
+:root {
+  --bg: #0f1419;
+  --bg-card: #1a1f26;
+  --text: #e6edf3;
+  --text-muted: #8b949e;
+  --accent: #58a6ff;
+  --success: #3fb950;
+  --warning: #d29922;
+  --danger: #f85149;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+  margin: 0;
+  padding: 2rem;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+h1 { font-size: 1.75rem; margin-bottom: 0.5rem; }
+h2 { font-size: 1.25rem; margin-top: 1.5rem; }
+h3 { font-size: 1rem; margin-top: 1rem; }
+
+.home .tagline { color: var(--text-muted); margin-bottom: 2rem; }
+.auth-buttons { display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1rem; }
+.text-muted { color: var(--text-muted); }
+
+.btn {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  font-size: 0.875rem;
+}
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-secondary { background: var(--bg-card); color: var(--text); border: 1px solid var(--text-muted); }
+.btn-danger { background: var(--danger); color: #fff; }
+.btn-sm { padding: 0.25rem 0.5rem; font-size: 0.8rem; }
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+.table th, .table td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--bg-card);
+}
+.table th { color: var(--text-muted); font-weight: 500; }
+
+.badge {
+  display: inline-block;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+.badge-active { background: rgba(63, 185, 80, 0.2); color: var(--success); }
+.badge-pending_registration { background: rgba(210, 153, 34, 0.2); color: var(--warning); }
+.badge-unreachable { background: rgba(248, 81, 73, 0.2); color: var(--danger); }
+
+.alert { padding: 1rem; border-radius: 6px; margin: 1rem 0; }
+.alert-info { background: rgba(88, 166, 255, 0.15); border-left: 4px solid var(--accent); }
+code { background: var(--bg-card); padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.9em; }
+
+.field { margin-bottom: 1rem; }
+.field label { display: block; margin-bottom: 0.25rem; color: var(--text-muted); }
+.field input[type="text"] {
+  padding: 0.5rem;
+  border: 1px solid var(--text-muted);
+  border-radius: 4px;
+  background: var(--bg-card);
+  color: var(--text);
+  min-width: 300px;
+}
+
+/* Metrics & charts */
+.metrics-range, .gallery-date {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+.range-label { color: var(--text-muted); font-size: 0.875rem; }
+.range-btn.active, .gallery-tabs .btn.active { background: var(--accent); color: #fff; }
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  gap: 1.5rem;
+  margin: 1rem 0;
+}
+.chart-card {
+  background: var(--bg-card);
+  border-radius: 8px;
+  padding: 1rem;
+  border: 1px solid #30363d;
+}
+.chart-card h3 { margin-top: 0; }
+.latest-metrics { margin-top: 1rem; color: var(--text-muted); font-size: 0.9rem; }
+.gallery-tabs { display: flex; gap: 0.5rem; margin: 1rem 0; }
+
+/* Server detail tabs */
+.server-tabs {
+  display: flex;
+  gap: 0.25rem;
+  margin: 1.5rem 0 1rem;
+  border-bottom: 1px solid #30363d;
+}
+.server-tabs .tab-btn {
+  padding: 0.75rem 1rem;
+  font-weight: 500;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+.server-tabs .tab-btn:hover { color: var(--text); }
+.server-tabs .tab-btn.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+.date-form { display: flex; gap: 0.5rem; align-items: center; }
+.date-input {
+  padding: 0.5rem;
+  border: 1px solid var(--text-muted);
+  border-radius: 4px;
+  background: var(--bg-card);
+  color: var(--text);
+}
+.filter-input {
+  padding: 0.5rem;
+  border: 1px solid var(--text-muted);
+  border-radius: 4px;
+  background: var(--bg-card);
+  color: var(--text);
+  min-width: 200px;
+}

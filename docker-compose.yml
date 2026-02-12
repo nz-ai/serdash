@@ -1,0 +1,93 @@
+services:
+  db:
+    image: timescale/timescaledb:latest-pg16
+    environment:
+      POSTGRES_USER: serdash
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-serdash_secret}
+      POSTGRES_DB: serdash
+    ports:
+      - "15432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db-init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U serdash -d serdash"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  dashboard:
+    build:
+      context: ./dashboard
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgres://serdash:${POSTGRES_PASSWORD:-serdash_secret}@db:5432/serdash
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE:-dev_secret_key_base_change_in_production}
+      RAILS_ENV: ${RAILS_ENV:-development}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
+      RAILS_HOST: ${RAILS_HOST:-localhost}
+      COLLECTOR_URL: ${COLLECTOR_URL:-http://collector:3001}
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./dashboard:/rails
+      - dashboard_tmp:/rails/tmp
+      - dashboard_log:/rails/log
+    restart: unless-stopped
+
+  collector:
+    build:
+      context: ./collector
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgres://serdash:${POSTGRES_PASSWORD:-serdash_secret}@db:5432/serdash
+      DISCOVERY_SUBNET: ${DISCOVERY_SUBNET:-}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  test-server:
+    build:
+      context: .
+      dockerfile: test-server/Dockerfile
+    hostname: test-server
+    environment:
+      COLLECTOR_URL: http://nginx
+      REGISTRATION_CODE: ${TEST_SERVER_REGISTRATION_CODE:-TESTDEV}
+      AGENT_HOSTNAME: test-server
+      SERDASH_CONFIG_DIR: /etc/serdash-agent
+      SERDASH_INTERVAL_SECONDS: 60
+      SERDASH_DEV_DISK_MOUNTS: "/,/media,/opt/backup"
+    depends_on:
+      - nginx
+    restart: unless-stopped
+    profiles:
+      - test
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      # - "443:443"  # Uncomment when SSL certs are in nginx/ssl/
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - dashboard
+      - collector
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  dashboard_tmp:
+  dashboard_log:
+
+networks:
+  default:
+    name: serdash_network
